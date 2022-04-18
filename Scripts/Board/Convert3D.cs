@@ -169,7 +169,7 @@ public class Convert3D : MonoBehaviour
                 {
                     GameObject backobj = Instantiate(_sCubePrefab) as GameObject;
 
-                    backobj.name = $"CubeBack[{i}, {j}]";
+                    backobj.name = $"BackCube[{i}, {j}]";
 
                     backobj.GetComponent<MeshRenderer>().material = _sBackMaterial;
                     backobj.GetComponent<MeshRenderer>().material.color = color;
@@ -318,6 +318,25 @@ public class Convert3D : MonoBehaviour
         }
     }
 
+
+    private bool IsAllBlockMatched()
+    {
+        for (int i = 0; i < _currentColumn; i++)
+        {
+            for (int j = 0; j < _currentRow; j++)
+            {
+                if (_board[i, j] != null)
+                {
+                    if (_board[i, j].GetComponent<Block>().CurrentState != Block.State.FIXED)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     /// <summary>
     /// 스크린상에 마우스 버튼 클릭할 경우 클릭된 위치에서
     /// 발사된 광선(직선)과 교차하는 오브젝트를 찾아주는 함수
@@ -369,7 +388,7 @@ public class Convert3D : MonoBehaviour
     {
         foreach (Block bc in _backBlockList)
         {
-            if (bc.CheckMatchPosition(target) && bc.CheckMatchColor(target))
+            if (bc.CurrentState != Block.State.FIXED && bc.CheckMatchPosition(target) && bc.CheckMatchColor(target))
             {
                 return bc.gameObject;
             }
@@ -389,9 +408,9 @@ public class Convert3D : MonoBehaviour
 
                 ChangeBlockTextColor(_target.GetComponent<Block>().BlockNumber, Color.red);
 
-                Vector3 clickObjecPosition = _target.transform.position;    // 현재 클릭큐브의 위치을 기록
+                Vector3 clickObjectPosition = _target.transform.position;    // 현재 클릭큐브의 위치을 기록
 
-                _target.transform.position = new Vector3(clickObjecPosition.x, clickObjecPosition.y, 0.0f);
+                _target.transform.position = new Vector3(clickObjectPosition.x, clickObjectPosition.y, 0.0f);
 
                 Destroy(_target.GetComponent<Rigidbody>()); // 물리엔진의 영향을 받지 않도록 RigidBody remove
 
@@ -422,8 +441,14 @@ public class Convert3D : MonoBehaviour
                 {
                     _target.transform.position = matchObj.GetComponent<Block>().OriginPosition;
                     matchObj.SetActive(false);
+
+                    _target.GetComponent<Block>().CurrentState = Block.State.FIXED;
+                    matchObj.GetComponent<Block>().CurrentState = Block.State.FIXED;
+
                     Destroy(_target.GetComponent<Rigidbody>());
                     Destroy(_target.GetComponent<Collider>());
+
+                    _target.GetComponent<Block>().MatchBlockAnimationStart();
                 }
                 else
                 {
@@ -444,15 +469,28 @@ public class Convert3D : MonoBehaviour
             if (_target != null)
             {
                 _target.transform.position = currentPosition;
-
                 GameObject matchObj = IsMatchPositionColorBlock(_target);
                 if (matchObj != null)
                 {
                     _target.transform.position = matchObj.GetComponent<Block>().OriginPosition;
                     _target.transform.localScale = _target.GetComponent<Block>().OriginScale;
-                    //matchObj.SetActive(false);
+                    matchObj.SetActive(false);
+
+                    _target.GetComponent<Block>().CurrentState = Block.State.FIXED;
+                    matchObj.GetComponent<Block>().CurrentState = Block.State.FIXED;
+
                     Destroy(_target.GetComponent<Rigidbody>());
                     Destroy(_target.GetComponent<Collider>());
+
+                    ChangeBlockTextColor(_target.GetComponent<Block>().BlockNumber, Color.black);
+
+                    _target.GetComponent<Block>().MatchBlockAnimationStart();
+                    _target = null;
+                    _isMouseDrag = false;
+                }
+                else
+                {
+                    _target.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
                 }
             }
         }
@@ -462,5 +500,10 @@ public class Convert3D : MonoBehaviour
     void Update()
     {
         MouseEventProcess();
+
+        if (IsAllBlockMatched())
+        {
+            Debug.Log("----------- Game Over -----------");
+        }
     }
 }

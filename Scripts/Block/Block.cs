@@ -4,6 +4,13 @@ using UnityEngine;
 
 public class Block : MonoBehaviour
 {
+    public enum State
+    {
+        STOP,
+        MOVE,
+        MOVING,
+        FIXED
+    }
     [SerializeField] private GameObject _sEdge;
     [SerializeField] private TextMesh _sNumberText;
 
@@ -29,10 +36,24 @@ public class Block : MonoBehaviour
             return _sNumberText.text;
         }
     }
+
+    public State CurrentState { set; get; }
     // Start is called before the first frame update
     void Start()
     {
+        CurrentState = State.STOP;
+    }
+    public void MatchBlockAnimationStart()
+    {
+        LeanTween.scale(this.gameObject, new Vector3(1.8f, 1.8f, 1.8f), 0.3f)
+            .setEase(LeanTweenType.easeInBack)
+            .setOnComplete(MatchBlockAnimationEnd);
+    }
 
+    public void MatchBlockAnimationEnd()
+    {
+        LeanTween.scale(this.gameObject, Vector3.one, 0.3f)
+            .setEase(LeanTweenType.easeInBounce);
     }
 
     public bool CheckMatchPosition(GameObject target)
